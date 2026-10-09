@@ -93,6 +93,7 @@ h2::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--
 .stop .t{font-size:1.05rem}
 .stop .meta{font-size:.88rem;color:var(--muted);overflow-wrap:anywhere}
 .stop .map{display:inline-block;margin-top:6px;font-size:.85rem;color:var(--ink);text-decoration:none;background:var(--glass);border:1px solid var(--glass-line);border-radius:999px;padding:1px 12px}
+.map-hint{font-size:.78rem;color:var(--ok);min-height:1em}
 .tag{display:inline-block;font-size:.7rem;padding:0 8px;border-radius:999px;background:var(--line);color:var(--muted);vertical-align:2px;margin-left:6px}
 
 .empty{background:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px dashed var(--glass-line);border-radius:18px;padding:18px;text-align:center;color:var(--muted);margin-top:10px}
@@ -411,6 +412,23 @@ function native(e){ return e.currency === "TWD" ? twd(e.amount) : yen(e.amount);
 function other(e){ return e.currency === "TWD" ? "≈ " + yen(toJPY(e)) : "≈ " + twd(e.amount * rate()); }
 function travelers(){ const t = (state.settings.travelers||[]).filter(Boolean); return t.length ? t : ["我"]; }
 function mapUrl(q){ return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q + " 福岡"); }
+function planMap(p){ return p.map || (p.place ? mapUrl(p.place) : ""); }
+// Read a place name out of a pasted Google Maps link (or the "name + address + link" text the Maps app shares)
+function parseMapText(txt){
+  const m = String(txt || "").match(/https?:\/\/[^\s<>"]+/); if (!m) return null;
+  const url = m[0], before = txt.slice(0, m.index).trim().split(/\n/)[0].trim();
+  let name = "";
+  try {
+    const u = new URL(url);
+    if (!/(^|\.)google\.|goo\.gl$|^g\.co$/.test(u.hostname)) return null;
+    const pm = u.pathname.match(/\/place\/([^/]+)/);
+    if (pm) name = decodeURIComponent(pm[1].replace(/\+/g, " "));
+    if (!name) name = u.searchParams.get("q") || u.searchParams.get("query") || "";
+    if (/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(name.trim())) name = "";
+  } catch { return null; }
+  if (!name && before && before.length <= 60) name = before;
+  return {url, name: name.trim(), short: /goo\.gl|\/\/g\.co\//.test(url)};
+}
 const spends = () => state.expenses.filter(e => e.cat !== XFER);
 let toastTimer;
 function toast(msg){ const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 2600); }
@@ -460,7 +478,7 @@ function renderPlan(days){
         ${p.place ? `<div class="meta">地點・${esc(p.place)}</div>` : ""}
         ${p.note ? `<div class="meta">${esc(p.note)}</div>` : ""}
       </button>
-      ${p.place ? `<a class="map" href="${esc(mapUrl(p.place))}" target="_blank" rel="noopener">→ 在 Google 地圖開啟</a>` : ""}
+      ${planMap(p) ? `<a class="map" href="${esc(planMap(p))}" target="_blank" rel="noopener">→ 在 Google 地圖開啟</a>` : ""}
     </li>`).join("") + `</ol>`;
 }
 
@@ -584,16 +602,41 @@ function planSheet(p, after){
     <div class="two"><label class="field">日期${daySelect(p.day)}</label>
     <label class="field">時間<input type="time" name="time" id="f-time" value="${esc(p.time)}"></label></div>
     <label class="field">要做什麼<input name="title" id="f-title" required value="${esc(p.title)}" placeholder="例如：一蘭拉麵總本店"></label>
-    <label class="field">地點（用來開地圖）<input name="place" id="f-place" value="${esc(p.place)}" placeholder="例如：博多駅"></label>
+    <label class="field">地點（可以直接貼 Google 地圖連結）<input name="place" id="f-place" value="${esc(p.place)}" placeholder="博多駅，或貼上 maps.app.goo.gl/… 連結" autocomplete="off">
+      <input type="hidden" name="map" id="f-map" value="${esc(p.map || "")}"><span class="map-hint" id="f-maphint">${p.map ? "已連結 Google 地圖位置 ✓" : ""}</span></label>
     <label class="field">備註<textarea name="note" id="f-note" rows="2" placeholder="交通方式、預約編號…">${esc(p.note)}</textarea></label>
     ${actions(p.id && "plans:" + p.id)}`,
   fd => {
-    const data = {day:Number(fd.get("day")), time:fd.get("time"), title:fd.get("title").trim(), place:fd.get("place").trim(), note:fd.get("note").trim(), sample:false};
+    const data = {day:Number(fd.get("day")), time:fd.get("time"), title:fd.get("title").trim(), place:fd.get("place").trim(), map:fd.get("map") || "", note:fd.get("note").trim(), sample:false};
     if (!data.title) return;
     p.id ? updItem("plans", p.id, data) : addItem("plans", data);
     state.day = data.day; closeSheet();
     if (after) after();
   });
+  $("f-place").addEventListener("input", onPlaceInput);
+  $("f-place").addEventListener("paste", onPlaceInput);   // paste keeps the line breaks of the Maps app's share text
+}
+function onPlaceInput(e){
+  const input = e.target, hint = $("f-maphint"), mapF = $("f-map");
+  const raw = e.type === "paste" ? (e.clipboardData && e.clipboardData.getData("text")) || "" : input.value;
+  const info = parseMapText(raw);
+  if (e.type === "paste") { if (!info) return; e.preventDefault(); }
+  if (!info) { if (!/https?:/.test(raw)) return; hint.textContent = "這不是 Google 地圖連結，請貼地圖 App「分享」的連結"; return; }
+  mapF.value = info.url;
+  const fill = name => {
+    if (!$("f-place")) return;           // sheet closed meanwhile
+    input.value = name;
+    const t = $("f-title"); if (t && !t.value.trim()) t.value = name;
+    hint.textContent = "已帶入地點，地圖會開這個位置 ✓";
+  };
+  if (info.name) { fill(info.name); return; }
+  input.value = "";
+  if (GAS) {
+    hint.textContent = "讀取地點名稱中…";
+    GAS.withSuccessHandler(full => { const again = parseMapText(full || ""); if (again && again.name) fill(again.name); else hint.textContent = "讀不出名稱，請自己輸入地點名稱（連結已保留）"; })
+       .withFailureHandler(() => { hint.textContent = "讀不出名稱，請自己輸入地點名稱（連結已保留）"; })
+       .resolveMapLink(info.url);
+  } else hint.textContent = "已保留地圖連結，請自己輸入地點名稱";
 }
 
 function expSheet(e){

@@ -14,7 +14,7 @@
  */
 
 const TABS = {
-  plans:    { name: '旅帳_行程', cols: ['id', 'day', 'time', 'title', 'place', 'note', 'sample', 'created'] },
+  plans:    { name: '旅帳_行程', cols: ['id', 'day', 'time', 'title', 'place', 'note', 'sample', 'created', 'map'] },
   todos:    { name: '旅帳_清單', cols: ['id', 'group', 'text', 'done', 'sample', 'created'] },
   expenses: { name: '旅帳_記帳', cols: ['id', 'day', 'cat', 'note', 'amount', 'currency', 'payer', 'to', 'sample', 'created'] }
 };
@@ -51,10 +51,11 @@ function api(body) {
   return out;
 }
 
-// Optional: run once from the editor to create the tabs before anyone opens the page.
+// Run once from the editor after updating this file, so Google asks for any new permission (e.g. reading map links).
 function setup() {
   ensureTabs_();
-  Logger.log('設定完成。下一步：部署 → 新增部署作業 → 網頁應用程式。');
+  resolveMapLink('https://maps.app.goo.gl/');
+  Logger.log('設定完成。下一步：部署 → 管理部署作業 → 編輯 → 新版本 → 部署。');
 }
 
 function ensureTabs_() {
@@ -66,6 +67,32 @@ function ensureTabs_() {
   }
   if (!ss.getSheetByName(SETTINGS_TAB)) { makeSheet_(ss, SETTINGS_TAB, ['key', 'value']); fresh = true; }
   if (fresh) seed_();
+  else addMissingCols_(ss);
+}
+
+// Tabs made by an older version keep their data; new columns are appended to the header.
+function addMissingCols_(ss) {
+  for (const coll of Object.keys(TABS)) {
+    const t = TABS[coll], sh = ss.getSheetByName(t.name);
+    const head = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0].map(String);
+    t.cols.forEach((c, i) => {
+      if (head[i] !== c && head.indexOf(c) < 0) sh.getRange(1, i + 1).setValue(c).setFontWeight('bold');
+    });
+  }
+}
+
+// Google Maps short links (maps.app.goo.gl/…) carry no place name; follow the redirect to the full link.
+function resolveMapLink(url) {
+  if (!/^https:\/\/(maps\.app\.goo\.gl|goo\.gl|g\.co|(www\.|maps\.)?google\.[a-z.]+)\//.test(String(url))) return '';
+  let u = String(url);
+  for (let i = 0; i < 5; i++) {
+    const r = UrlFetchApp.fetch(u, { followRedirects: false, muteHttpExceptions: true });
+    const h = r.getHeaders();
+    const loc = h.Location || h.location;
+    if (!loc) break;
+    u = loc;
+  }
+  return u;
 }
 
 function makeSheet_(ss, name, cols) {
@@ -125,7 +152,7 @@ function norm_(field, v) {
 
 function upsert_(coll, item) {
   const sh = sheet_(coll);
-  const cols = TABS[coll].cols;
+  const cols = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0].map(String).filter(String);
   const row = cols.map(c => {
     const v = item[c];
     if (v === undefined || v === null) return '';
