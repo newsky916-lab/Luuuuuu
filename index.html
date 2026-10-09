@@ -322,6 +322,53 @@ function startLocal(){
   else { for (const k of ["plans","todos","expenses"]) state[k] = LOCAL_SAMPLE[k].map((x,i) => ({id:uid(),created:Date.now()+i,...x})); lsSave(); }
   render();
 }
+// ---- Google Sheets (Apps Script web app) ----
+const API_KEY = LS_KEY + "-api", CACHE_KEY = LS_KEY + "-sheet-cache";
+let api = null, pending = 0;
+function loadApi(){
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (h.get("api") && h.get("k")) {
+    api = {url: h.get("api"), k: h.get("k")};
+    try { localStorage.setItem(API_KEY, JSON.stringify(api)); } catch {}
+    try { history.replaceState(null, "", location.pathname + location.search); } catch {}
+  } else {
+    try { api = JSON.parse(localStorage.getItem(API_KEY)); } catch { api = null; }
+  }
+  return api && api.url && api.k ? api : (api = null);
+}
+function shareUrl(){ return location.origin + location.pathname + "#api=" + encodeURIComponent(api.url) + "&k=" + encodeURIComponent(api.k); }
+function applyAll(j){
+  state.plans = j.plans || []; state.todos = j.todos || []; state.expenses = j.expenses || [];
+  state.settings = {...DEFAULT_SETTINGS, ...(j.settings || {})};
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(j)); } catch {}
+  render();
+}
+async function apiCall(body){
+  const opts = body ? {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({...body, k:api.k})} : undefined;
+  const url = body ? api.url : api.url + (api.url.includes("?") ? "&" : "?") + "k=" + encodeURIComponent(api.k);
+  const r = await fetch(url, opts);
+  const j = await r.json();
+  if (j.error) throw {code:j.error};
+  return j;
+}
+async function pull(){
+  if (pending) return;
+  try { const j = await apiCall(); if (!pending) applyAll(j); }
+  catch(e){ toast(e && e.code === "unauthorized" ? "連線密碼不正確，請重新打開分享連結" : "暫時連不上 Google 試算表"); }
+}
+async function push(body){
+  pending++; render();
+  try { const j = await apiCall(body); pending--; if (!pending) applyAll(j); }
+  catch(e){ pending--; toast(e && e.code === "unauthorized" ? "連線密碼不正確，請重新打開分享連結" : "同步失敗，請檢查網路後再試一次"); pull(); }
+}
+function startSheet(){
+  state.mode = "sheet";
+  try { const c = JSON.parse(localStorage.getItem(CACHE_KEY)); if (c) applyAll(c); } catch {}
+  render(); pull();
+  setInterval(() => { if (!document.hidden) pull(); }, 20000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) pull(); });
+}
+
 function startDb(){
   state.mode = "db";
   for (const coll of ["plans","todos","expenses"]) {
@@ -343,18 +390,22 @@ function failMsg(e){
 }
 async function addItem(coll, data){
   data = {...data, created: Date.now()};
+  if (api) { const item = {id:uid(), ...data}; state[coll].push(item); render(); return push({op:"upsert", coll, item}); }
   if (db) { try { await db.collection(coll).add(data); } catch(e){ toast(failMsg(e)); } return; }
   state[coll].push({id:uid(), ...data}); lsSave(); render();
 }
 async function updItem(coll, id, patch){
+  if (api) { const it = state[coll].find(x => x.id === id); if (!it) return; Object.assign(it, patch); render(); return push({op:"upsert", coll, item:{...it}}); }
   if (db) { try { await db.collection(coll).doc(id).update(patch); } catch(e){ toast(failMsg(e)); } return; }
   const it = state[coll].find(x => x.id === id); if (it) Object.assign(it, patch); lsSave(); render();
 }
 async function delItem(coll, id){
+  if (api) { state[coll] = state[coll].filter(x => x.id !== id); render(); return push({op:"delete", coll, id}); }
   if (db) { try { await db.collection(coll).doc(id).delete(); } catch(e){ toast(failMsg(e)); } return; }
   state[coll] = state[coll].filter(x => x.id !== id); lsSave(); render();
 }
 async function saveSettings(s){
+  if (api) { state.settings = {...DEFAULT_SETTINGS, ...s}; render(); return push({op:"settings", settings:s}); }
   if (db) { try { await db.doc("settings/trip").set(s); } catch(e){ toast(failMsg(e)); } return; }
   state.settings = s; lsSave(); render();
 }
@@ -402,7 +453,8 @@ function render(){
   const total = spends().reduce((a,e) => a + toJPY(e), 0);
   $("spendStat").textContent = twd(total * rate());
 
-  $("modeNote").textContent = state.mode === "db" ? "～ 資料即時同步，分享此頁給旅伴就能一起編輯 ～"
+  $("modeNote").textContent = state.mode === "sheet" ? (pending ? "～ 同步到 Google 試算表中… ～" : "～ 資料存在 Google 試算表，每 20 秒自動更新 ～")
+    : state.mode === "db" ? "～ 資料即時同步，分享此頁給旅伴就能一起編輯 ～"
     : state.mode === "local" ? "～ 資料存在這台裝置的瀏覽器中 ～" : "載入中…";
 
   renderPlan(days); renderTodo(done); renderMoney(total);
@@ -596,6 +648,9 @@ function settingsSheet(){
     <label class="field">天數<input type="number" min="1" max="30" name="days" id="s-days" value="${esc(S.days)}"></label></div>
     <label class="field">匯率：1 台幣 = ? 日圓<input type="number" step="0.01" min="0" name="jpt" id="s-rate" value="${(1 / rate()).toFixed(2)}"></label>
     <label class="field">旅伴（用逗號分隔，用來分帳）<input name="travelers" id="s-trav" value="${esc((S.travelers||[]).join(", "))}"></label>
+    ${state.mode === "sheet" ? `<div class="field">Google 試算表同步：已連線
+      <div class="row"><button type="button" class="ghost" id="copyShare">複製分享連結</button><button type="button" class="ghost" id="unlink">中斷連線</button></div>
+      <span id="shareOut" style="overflow-wrap:anywhere"></span></div>` : ""}
     ${actions(null)}`,
   fd => {
     const jpt = Number(fd.get("jpt"));
@@ -609,6 +664,20 @@ function settingsSheet(){
     closeSheet();
   });
 }
+
+$("sheet").addEventListener("click", e => {
+  if (e.target.closest("#copyShare")) {
+    const link = shareUrl(), out = $("shareOut");
+    const show = () => { out.textContent = link; };
+    try { navigator.clipboard.writeText(link).then(() => { out.textContent = "已複製，傳給旅伴用手機打開就能一起編輯"; }, show); } catch { show(); }
+  }
+  if (e.target.closest("#unlink")) {
+    const b = e.target.closest("#unlink");
+    if (!b.classList.contains("armed")) { b.classList.add("armed"); b.textContent = "確定中斷？"; return; }
+    try { localStorage.removeItem(API_KEY); localStorage.removeItem(CACHE_KEY); } catch {}
+    location.reload();
+  }
+});
 
 // ---------- events ----------
 function setTab(tab){
@@ -646,7 +715,8 @@ try { const t = localStorage.getItem(LS_KEY + "-tab"); if (t && t !== "plan") se
 
 // ---------- boot ----------
 render();
-if (window.claude && typeof window.claude.use === "function") {
+if (loadApi()) startSheet();
+else if (window.claude && typeof window.claude.use === "function") {
   window.claude.use("db").then(d => { if (d) { db = d; startDb(); } else startLocal(); }).catch(startLocal);
 } else startLocal();
 })();
