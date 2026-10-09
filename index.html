@@ -10,6 +10,7 @@
   --clay:#d97757; --clay-ink:#b4532f; --clay-soft:rgba(217,119,87,.28);
   --oat:#e3dacc; --cactus:#bcd1ca; --heather:#cbcadb; --olive:#788c5d; --ok:#5f7a45;
   --on-clay:#fffaf5; --scrim:rgba(31,30,28,.4);
+  --dino:#9fd0a2; --belly:#eef6e2; --blush:#f2a7a0; --mustard:#e8c46a;
   --f-hand:"LXGW WenKai TC","Kaiti TC","BiauKai","DFKai-SB","STKaiti",cursive,serif;
   --f-num:"Caveat","LXGW WenKai TC",cursive;
   --f-serif:"Newsreader","Georgia","Times New Roman",serif;
@@ -20,12 +21,12 @@
   --paper:#262624; --card:#30302e; --ink:#f2efe6; --muted:#a8a395; --line:#45443f;
   --clay:#e0896b; --clay-ink:#f0a184; --clay-soft:rgba(224,137,107,.3);
   --oat:#4a443a; --cactus:#3c4a45; --heather:#45445a; --olive:#a3b585; --ok:#a9c48a;
-  --on-clay:#1f1e1c; --scrim:rgba(0,0,0,.55); color-scheme:dark}}
+  --on-clay:#1f1e1c; --scrim:rgba(0,0,0,.55); --dino:#7fb486; --belly:#d9e8c8; --blush:#e48f88; --mustard:#c9a54f; color-scheme:dark}}
 :root[data-theme="dark"]{
   --paper:#262624; --card:#30302e; --ink:#f2efe6; --muted:#a8a395; --line:#45443f;
   --clay:#e0896b; --clay-ink:#f0a184; --clay-soft:rgba(224,137,107,.3);
   --oat:#4a443a; --cactus:#3c4a45; --heather:#45445a; --olive:#a3b585; --ok:#a9c48a;
-  --on-clay:#1f1e1c; --scrim:rgba(0,0,0,.55); color-scheme:dark}
+  --on-clay:#1f1e1c; --scrim:rgba(0,0,0,.55); --dino:#7fb486; --belly:#d9e8c8; --blush:#e48f88; --mustard:#c9a54f; color-scheme:dark}
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -38,9 +39,27 @@ button{cursor:pointer}
 
 /* ink line over a flat color blob, slightly offset — the illustration look */
 .sketch{background:var(--card);border:1.8px solid var(--ink);border-radius:var(--wob);box-shadow:5px 6px 0 -1px var(--oat)}
-.tape{box-shadow:5px 6px 0 -1px var(--clay-soft)}
-.tape.t2{box-shadow:-5px 6px 0 -1px var(--cactus)}
-.tape.t3{box-shadow:5px 6px 0 -1px var(--heather)}
+.tape{position:relative}
+/* washi tape: patterned, translucent, torn ends */
+.wt,.tape::before{content:"";position:absolute;width:74px;height:20px;opacity:.88;pointer-events:none;
+  clip-path:polygon(0 12%,6% 0,14% 10%,22% 0,100% 0,96% 14%,100% 28%,95% 44%,100% 60%,96% 76%,100% 100%,0 100%,4% 84%,0 68%,5% 52%,0 36%,4% 24%);
+  background:repeating-linear-gradient(-45deg,var(--clay) 0 5px,var(--clay-soft) 5px 10px)}
+.tape::before{top:-11px;left:50%;transform:translateX(-50%) rotate(-3deg)}
+.tape.t2::before{left:auto;right:-14px;top:-8px;transform:rotate(38deg);background:radial-gradient(var(--card) 2.2px,transparent 2.6px) 0 0/9px 9px,var(--cactus)}
+.tape.t3::before{left:-16px;top:-6px;transform:rotate(-34deg);background:linear-gradient(90deg,rgba(255,255,255,.45) 1px,transparent 1px) 0 0/7px 7px,linear-gradient(rgba(255,255,255,.45) 1px,transparent 1px) 0 0/7px 7px,var(--heather)}
+.tape.t4::before{background:var(--mustard);transform:translateX(-50%) rotate(2deg);width:58px}
+
+/* 阿龍 */
+.ryu{display:block;width:64px;height:64px;overflow:visible}
+.hero-art{position:relative;width:132px;height:100px;margin-top:14px}
+.hero-art .doodle{position:absolute;right:0;top:0}
+.hero-art .ryu{position:absolute;left:-14px;bottom:-6px;width:62px;height:62px;animation:bob 3s ease-in-out infinite}
+.bubble{position:absolute;left:4px;top:-20px;background:var(--card);border:1.6px solid var(--ink);border-radius:14px 16px 14px 4px;padding:0 8px;font-size:.78rem;white-space:nowrap;transform:rotate(-6deg)}
+@keyframes bob{50%{transform:translateY(-4px) rotate(-3deg)}}
+.empty .ryu{margin:0 auto 6px;width:72px;height:72px}
+.loading .ryu{width:44px;height:44px;animation:bob 1s ease-in-out infinite}
+.peek{position:absolute;left:8px;top:-30px;width:42px;height:42px;clip-path:inset(0 0 24% 0)}
+.verdict .ryu{display:inline-block;width:36px;height:36px;vertical-align:middle}
 
 /* header */
 header.top{padding-block:20px 6px;display:grid;gap:16px}
@@ -56,11 +75,11 @@ h1{font-weight:700;font-size:2rem;line-height:1.2;margin:2px 0 0;text-wrap:balan
 .icon-btn{justify-self:start;border:1.8px solid var(--ink);background:var(--card);border-radius:var(--wob2);padding:3px 14px;font-size:.9rem;white-space:nowrap}
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .stat{padding:10px 8px 8px;min-width:0;text-align:center}
-.stat b{display:block;font-family:var(--f-num);font-size:1.6rem;line-height:1.1;overflow-wrap:anywhere}
+.stat b{display:block;font-family:var(--f-num);font-size:1.4rem;line-height:1.15;white-space:nowrap}
 .stat b small{display:block;font-size:.95rem;color:var(--muted);font-weight:500}
 .stat span{font-size:.8rem;color:var(--muted)}
 
-h2{font-weight:700;font-size:1.35rem;margin:28px 0 10px;display:inline-block;padding:0 4px;background:linear-gradient(transparent 62%,var(--clay-soft) 62%,var(--clay-soft) 90%,transparent 90%)}
+h2{font-weight:700;font-size:1.3rem;margin:30px 0 12px;display:inline-block;padding:2px 18px;transform:rotate(-1.5deg);background:repeating-linear-gradient(90deg,var(--clay-soft) 0 8px,transparent 8px 16px),var(--oat);clip-path:polygon(0 8%,4% 0,100% 6%,97% 30%,100% 55%,96% 78%,100% 100%,3% 94%,0 70%,4% 48%,0 26%)}
 .panel[hidden]{display:none}
 
 /* day strip */
@@ -130,7 +149,7 @@ h2{font-weight:700;font-size:1.35rem;margin:28px 0 10px;display:inline-block;pad
 .dayhead{font-size:.95rem;color:var(--muted);margin:20px 0 8px}
 
 /* tab bar */
-nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1.8px solid var(--ink);padding:6px 16px calc(6px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;gap:6px;z-index:5}
+nav.tabs{position:fixed;overflow:visible;left:0;right:0;bottom:0;background:var(--paper);border-top:1.8px solid var(--ink);padding:6px 16px calc(6px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;gap:6px;z-index:5}
 nav.tabs button{flex:1;max-width:180px;border:1.8px solid transparent;background:none;border-radius:var(--wob2);padding:4px;color:var(--muted)}
 nav.tabs button span{display:block;font-size:1.15rem;font-weight:700}
 nav.tabs button small{font-family:var(--f-serif);font-style:italic;font-size:.82rem}
@@ -138,7 +157,7 @@ nav.tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--ink);b
 
 /* sheet */
 .scrim{position:fixed;inset:0;background:var(--scrim);z-index:10;display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--card);width:100%;max-width:560px;border:1.8px solid var(--ink);border-bottom:0;border-radius:26px 32px 0 0;padding:20px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:90%;overflow-y:auto;display:grid;gap:14px}
+.sheet{position:relative;background:var(--card);width:100%;max-width:560px;border:1.8px solid var(--ink);border-bottom:0;border-radius:26px 32px 0 0;padding:20px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:90%;overflow-y:auto;display:grid;gap:14px}
 .sheet h3{font-size:1.3rem;margin:0;display:flex;align-items:center;gap:8px}
 .field{display:grid;gap:2px;font-size:.88rem;color:var(--muted)}
 .field input,.field select,.field textarea{border:0;border-bottom:1.8px solid var(--ink);background:transparent;border-radius:0;padding:6px 2px;font-size:1.05rem;color:var(--ink);width:100%;min-width:0}
@@ -158,6 +177,19 @@ nav.tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--ink);b
 </style>
 
 <div class="wrap">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="ryu" viewBox="0 0 100 100">
+  <g stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path style="fill:var(--dino)" d="M24 72C13 73 6 66 3 57c7 5 14 7 22 6z"/>
+    <circle style="fill:var(--clay)" cx="31" cy="49" r="4.5"/><circle style="fill:var(--clay)" cx="37" cy="37" r="4.5"/><circle style="fill:var(--clay)" cx="46" cy="27" r="4.5"/>
+    <path style="fill:var(--dino)" d="M26 90C14 90 12 74 20 66c4-6 8-10 14-12 0-14 6-30 24-32 18-2 28 10 26 22-2 10-10 14-18 14 4 6 8 16 6 24-2 8-10 8-16 8z"/>
+    <ellipse style="fill:var(--belly)" cx="49" cy="75" rx="12" ry="11"/>
+    <ellipse style="fill:var(--dino)" cx="36" cy="91" rx="8" ry="3.5"/><ellipse style="fill:var(--dino)" cx="60" cy="91" rx="8" ry="3.5"/>
+    <path fill="none" d="M62 65q7 1 9-5M72 50q4 3 8 0"/>
+  </g>
+  <circle fill="currentColor" cx="70" cy="38" r="3.4"/><circle fill="#fff" cx="71.2" cy="36.8" r="1.1"/>
+  <ellipse style="fill:var(--blush)" cx="78" cy="45" rx="4" ry="2.4"/>
+</symbol></defs></svg>
   <header class="top">
     <div class="hero">
       <div>
@@ -165,17 +197,21 @@ nav.tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--ink);b
         <h1 id="tripName">福岡行</h1>
         <p class="sub" id="tripDates">博多・天神・太宰府</p>
       </div>
-      <svg class="doodle" viewBox="0 0 120 96" aria-hidden="true">
+      <div class="hero-art" aria-hidden="true">
+      <span class="bubble">阿龍：出發囉！</span>
+      <svg class="doodle" viewBox="0 0 120 96">
         <path class="blob" d="M84 12c11 0 19 8 18 19s-9 18-19 17-18-8-17-18 7-18 18-18z"/>
         <path class="blob2" d="M4 80c10-14 30-20 48-12s30 4 40 10c-8 10-80 12-88 2z"/>
         <path class="ln" d="M38 84 46 14 54 84M41 62h10M43 40h6M46 14V5M10 89c6-4 12-4 18 0s12 4 18 0 12-4 18 0 12 4 18 0 12-4 18 0"/>
       </svg>
+      <svg class="ryu" style="color:var(--ink)"><use href="#ryu"/></svg>
+      </div>
     </div>
     <button class="icon-btn" id="openSettings" type="button">旅程設定 ✎</button>
     <div class="stats">
       <div class="stat sketch tape"><span id="cdLabel">出發倒數</span><b id="cdVal">—</b></div>
-      <div class="stat sketch"><span>清單完成</span><b id="todoStat">0/0</b></div>
-      <div class="stat sketch"><span>已花費</span><b id="spendStat">NT$0</b></div>
+      <div class="stat sketch tape t4"><span>清單完成</span><b id="todoStat">0/0</b></div>
+      <div class="stat sketch tape t2"><span>已花費</span><b id="spendStat">NT$0</b></div>
     </div>
   </header>
 
@@ -208,6 +244,7 @@ nav.tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--ink);b
 </div>
 
 <nav class="tabs" role="tablist">
+  <svg class="ryu peek" style="color:var(--ink)" aria-hidden="true"><use href="#ryu"/></svg>
   <button role="tab" aria-selected="true" data-tab="plan" type="button"><span>行程</span><small>plan</small></button>
   <button role="tab" aria-selected="false" data-tab="todo" type="button"><span>清單</span><small>list</small></button>
   <button role="tab" aria-selected="false" data-tab="money" type="button"><span>記帳</span><small>money</small></button>
@@ -229,7 +266,8 @@ const XFER = "轉帳";
 const WEEK = "日一二三四五六";
 const LS_KEY = "fukuoka-trip-v1";
 const SPARK = '<svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.4 6-.3 12 .2 19M2.5 12.3c6-.4 12 .3 19-.2M5.2 5c4.3 4.6 9 9.3 13.7 14M18.8 5.2C14.3 9.6 9.8 14.2 5 18.9"/></svg>';
-const LOADING = `<div class="empty"><span class="loading">${SPARK}翻開筆記本中…</span></div>`;
+const RYU = '<svg class="ryu" style="color:var(--ink)" aria-hidden="true"><use href="#ryu"/></svg>';
+const LOADING = `<div class="empty"><span class="loading">${RYU}阿龍翻筆記本中…</span></div>`;
 
 // Local-only fallback content (used when the page runs outside the shared store)
 const LOCAL_SAMPLE = {
@@ -359,11 +397,11 @@ function renderPlan(days){
   $("days").innerHTML = h;
   const items = state.plans.filter(p => p.day === state.day).sort((a,b) => (a.time||"99").localeCompare(b.time||"99") || (a.created||0)-(b.created||0));
   if (state.mode === "loading") { $("planList").innerHTML = LOADING; return; }
-  if (!items.length) { $("planList").innerHTML = `<div class="empty">Day ${state.day} 還是空白頁。<br>按「新增行程」，或到「清單」把口袋名單排進來。</div>`; return; }
-  const tapes = ["tape","tape t2","tape t3"];
+  if (!items.length) { $("planList").innerHTML = `<div class="empty">${RYU}Day ${state.day} 還是空白頁，阿龍在等你排行程。<br>按「新增行程」，或到「清單」把口袋名單排進來。</div>`; return; }
+  const tapes = ["tape t2","tape t3","tape t4"];
   $("planList").innerHTML = `<ol class="timeline">` + items.map((p,i) => `
     <li class="stop"><time>${esc(p.time || "—")}</time>
-      <button class="card sketch ${i % 3 === 0 ? tapes[(i/3|0) % 3] : ""}" type="button" data-plan="${esc(p.id)}">
+      <button class="card sketch ${tapes[i % 3]}" type="button" data-plan="${esc(p.id)}">
         <div class="t">${esc(p.title)}${p.sample ? '<span class="tag">範例</span>' : ""}</div>
         ${p.place ? `<div class="meta">地點・${esc(p.place)}</div>` : ""}
         ${p.note ? `<div class="meta">${esc(p.note)}</div>` : ""}
@@ -378,7 +416,7 @@ function renderTodo(done){
   if (!$("todoGroup").options.length) $("todoGroup").innerHTML =
     `<optgroup label="待辦">${TODO_GROUPS.map(g => `<option>${g}</option>`).join("")}</optgroup><optgroup label="口袋名單">${WISH_GROUPS.map(g => `<option>${g}</option>`).join("")}</optgroup>`;
   if (state.mode === "loading") { $("todoList").innerHTML = LOADING; return; }
-  if (!n) { $("todoList").innerHTML = `<div class="empty">清單是空的。在上方寫下第一件要準備的事。</div>`; return; }
+  if (!n) { $("todoList").innerHTML = `<div class="empty">${RYU}清單是空的。在上方寫下第一件要準備的事。</div>`; return; }
   const groups = [...GROUPS, ...new Set(state.todos.map(t => t.group).filter(g => !GROUPS.includes(g)))];
   const tapes = ["tape","tape t2","tape t3"]; let k = 0;
   $("todoList").innerHTML = groups.map(g => {
@@ -395,11 +433,11 @@ function renderMoney(total){
   const T = travelers();
   const per = total / T.length;
   $("moneyStats").innerHTML = `
-    <div class="stat sketch tape t2"><span>總花費</span><b>${both(total)}</b></div>
+    <div class="stat sketch tape t4"><span>總花費</span><b>${both(total)}</b></div>
     <div class="stat sketch"><span>每人 (${T.length})</span><b>${both(per)}</b></div>
     <div class="stat sketch"><span>筆數</span><b>${spends().length}</b></div>`;
   if (state.mode === "loading") { $("moneyBody").innerHTML = LOADING; return; }
-  if (!state.expenses.length) { $("moneyBody").innerHTML = `<div class="empty">還沒有記錄。按「記一筆」輸入金額，日圓或台幣都可以。</div>`; return; }
+  if (!state.expenses.length) { $("moneyBody").innerHTML = `<div class="empty">${RYU}還沒有記錄。按「記一筆」輸入金額，日圓或台幣都可以。</div>`; return; }
 
   let h = "";
   const byCat = {}; for (const e of spends()) byCat[e.cat || "其他"] = (byCat[e.cat || "其他"] || 0) + toJPY(e);
@@ -428,15 +466,16 @@ function renderMoney(total){
     h += `<h2>分帳（平均分攤）</h2><ul class="settle sketch tape t3">` + T.map(t =>
       `<li><span>${esc(t)} 實付</span><span class="num">${twd(net[t] * rate())}</span></li>`).join("") +
       (moves.length ? moves.map(([a,b,m]) => `<li class="verdict"><span>${esc(a)} → ${esc(b)}</span><span class="num neg">${twd(m * rate())}</span></li>`).join("")
-        : `<li class="verdict"><span class="pos">目前已打平 ✓</span></li>`) + `</ul>`;
+        : `<li class="verdict"><span class="pos">${RYU} 阿龍說：目前已打平！</span></li>`) + `</ul>`;
   }
 
   h += `<h2>明細</h2>`;
   const dayKeys = [...new Set(state.expenses.map(e => e.day || 0))].sort((a,b) => a - b);
-  for (const dk of dayKeys) {
+  const ltapes = ["tape t4","tape t2","tape","tape t3"];
+  for (const [ki, dk] of dayKeys.entries()) {
     const list = state.expenses.filter(e => (e.day || 0) === dk).sort((a,b) => (a.created||0)-(b.created||0));
     const sum = list.filter(e => e.cat !== XFER).reduce((a,e) => a + toJPY(e), 0);
-    h += `<div class="dayhead">${dk ? `Day ${dk} ${dayLabel(dk)}` : "出發前 / 未分日"}・小計 <span class="num">${twd(sum * rate())}</span></div><ul class="ledger sketch">` +
+    h += `<div class="dayhead">${dk ? `Day ${dk} ${dayLabel(dk)}` : "出發前 / 未分日"}・小計 <span class="num">${twd(sum * rate())}</span></div><ul class="ledger sketch ${ltapes[ki % 4]}">` +
       list.map(e => `<li><button type="button" data-exp="${esc(e.id)}">
         <span class="desc"><span class="pill ${e.cat === XFER ? "xfer" : ""}">${esc(e.cat || "其他")}</span>${esc(e.note || "")}${e.sample ? '<span class="tag">範例</span>' : ""}</span>
         <span class="amt">${native(e)}</span>
@@ -450,7 +489,7 @@ function renderMoney(total){
 // ---------- sheets ----------
 let sheetSubmit = null;
 function openSheet(html, onSubmit){
-  $("sheet").innerHTML = html; sheetSubmit = onSubmit; $("scrim").hidden = false;
+  $("sheet").innerHTML = `<i class="wt" style="top:-6px;left:24px;transform:rotate(-4deg)"></i>` + html; sheetSubmit = onSubmit; $("scrim").hidden = false;
   const f = $("sheet").querySelector("input:not([type=hidden]),select,textarea"); if (f) setTimeout(() => f.focus(), 30);
 }
 function closeSheet(){ $("scrim").hidden = true; $("sheet").innerHTML = ""; sheetSubmit = null; }
