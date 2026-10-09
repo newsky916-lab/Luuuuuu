@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yusei+Magic&family=LXGW+WenKai+TC:wght@400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yusei+Magic&family=Mali:wght@500;600&family=LXGW+WenKai+TC:wght@400&display=swap">
 <style>
 /* Layout: style L "夕陽玻璃" — a fixed Hakata-bay sunset sky behind frosted-glass cards, marker-pen type, pill controls, fixed bottom tab bar, bottom sheets. Dark = dusk over the bay. */
 :root{
@@ -13,8 +13,9 @@
   --ok:#1f7a5a; --scrim:rgba(30,35,64,.35); --shadow:0 8px 24px rgba(30,35,64,.12);
   --tp:rgba(255,255,255,.7); --tp2:rgba(255,214,170,.85); --tp3:rgba(196,210,230,.95);
   --snail:#fff3d6; --shell:#ff8a5c; --blush:#ff9f8f;
+  --wave1:rgba(255,255,255,.38); --wave2:rgba(84,124,186,.28); --wave3:rgba(255,255,255,.55);
   --f-hand:"Yusei Magic","LXGW WenKai TC","PingFang TC",sans-serif;
-  --f-num:"Yusei Magic","LXGW WenKai TC",sans-serif;
+  --f-num:"Mali","Yusei Magic",sans-serif;
   --f-latin:"Yusei Magic",sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -24,7 +25,7 @@
   --accent:#ffd7b5; --on-accent:#1f1d3d; --sun:#ffa27a; --sun-ink:#ffb594; --sun-soft:rgba(255,162,122,.3);
   --ok:#8fe0bd; --scrim:rgba(0,0,0,.5); --shadow:0 8px 24px rgba(0,0,0,.25);
   --tp:rgba(255,255,255,.28); --tp2:rgba(255,190,150,.45); --tp3:rgba(180,170,230,.45);
-  --snail:#ffe7c2; --shell:#ffa27a; --blush:#ff9f8f; color-scheme:dark}}
+  --snail:#ffe7c2; --shell:#ffa27a; --blush:#ff9f8f; --wave1:rgba(255,255,255,.07); --wave2:rgba(255,170,140,.14); --wave3:rgba(255,200,170,.22); color-scheme:dark}}
 :root[data-theme="dark"]{
   --sky:linear-gradient(170deg,#1f1d3d 0%,#3b2d5a 42%,#74435f 80%,#9a535a 100%);
   --bg:#3b2d5a; --glass:rgba(22,20,44,.42); --glass-strong:rgba(34,30,62,.86); --glass-line:rgba(255,255,255,.2);
@@ -32,7 +33,7 @@
   --accent:#ffd7b5; --on-accent:#1f1d3d; --sun:#ffa27a; --sun-ink:#ffb594; --sun-soft:rgba(255,162,122,.3);
   --ok:#8fe0bd; --scrim:rgba(0,0,0,.5); --shadow:0 8px 24px rgba(0,0,0,.25);
   --tp:rgba(255,255,255,.28); --tp2:rgba(255,190,150,.45); --tp3:rgba(180,170,230,.45);
-  --snail:#ffe7c2; --shell:#ffa27a; --blush:#ff9f8f; color-scheme:dark}
+  --snail:#ffe7c2; --shell:#ffa27a; --blush:#ff9f8f; --wave1:rgba(255,255,255,.07); --wave2:rgba(255,170,140,.14); --wave3:rgba(255,200,170,.22); color-scheme:dark}
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -68,7 +69,7 @@ h1{font-size:2rem;line-height:1.2;margin:2px 0 0;text-wrap:balance}
 .icon-btn{justify-self:start;border:1px solid var(--glass-line);background:var(--glass);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-radius:999px;padding:4px 16px;font-size:.9rem;white-space:nowrap}
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .stat{padding:12px 8px 10px;min-width:0;text-align:center}
-.stat b{display:block;font-family:var(--f-num);font-size:1.3rem;line-height:1.2;white-space:nowrap}
+.stat b{display:block;font-family:var(--f-num);font-weight:600;font-size:1.25rem;line-height:1.2;white-space:nowrap}
 .stat b small{display:block;font-size:.8rem;color:var(--muted)}
 .stat span{font-size:.78rem;color:var(--muted)}
 
@@ -133,7 +134,7 @@ h2::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--
 .ledger button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 12px;width:100%;padding:10px 12px;cursor:pointer}
 .ledger button:focus-visible{outline:2px solid var(--sun-ink);outline-offset:-2px;border-radius:14px}
 .ledger .desc{min-width:0;overflow-wrap:anywhere}
-.ledger .amt{text-align:right;font-family:var(--f-num);font-size:1.1rem;line-height:1.3}
+.ledger .amt{text-align:right;font-family:var(--f-num);font-weight:600;font-size:1.1rem;line-height:1.3}
 .ledger .sm{font-size:.8rem;color:var(--muted)}
 .pill{display:inline-block;font-size:.75rem;padding:0 9px;border-radius:999px;background:var(--sun-soft);margin-right:6px}
 .pill.xfer{background:var(--tp3)}
@@ -161,6 +162,16 @@ nav.tabs button[aria-selected="true"]{color:var(--on-accent);background:var(--ac
 .danger{background:none;border:1px solid var(--sun-ink);color:var(--sun-ink);border-radius:999px;padding:8px 16px}
 .danger.armed{background:var(--sun-ink);color:#fff}
 
+/* sea: soft waves along the bottom of the sky */
+.sea{position:fixed;left:0;right:0;bottom:0;height:230px;z-index:-1;pointer-events:none;overflow:hidden}
+.sea svg{position:absolute;bottom:0;left:0;width:200%;height:100%}
+.sea .w1{fill:var(--wave1);animation:drift 26s linear infinite}
+.sea .w2{fill:var(--wave2);animation:drift 38s linear infinite reverse}
+.sea .w3{fill:none;stroke:var(--wave3);stroke-width:1.5;stroke-dasharray:2 10;stroke-linecap:round;animation:drift 30s linear infinite}
+@keyframes drift{to{transform:translateX(-50%)}}
+.wave-rule{display:block;width:72px;height:8px;margin:-4px 0 8px 18px}
+.wave-rule path{fill:none;stroke:var(--sun);stroke-width:2;stroke-linecap:round;opacity:.7}
+
 /* snail */
 .mascot{display:block;width:64px;height:64px;overflow:visible}
 .hero-art{position:relative;width:132px;height:100px;margin-top:14px}
@@ -179,6 +190,11 @@ nav.tabs button[aria-selected="true"]{color:var(--on-accent);background:var(--ac
 </style>
 
 <div class="wrap">
+<div class="sea" aria-hidden="true"><svg viewBox="0 0 1440 150" preserveAspectRatio="none">
+  <path class="w2" d="M0 70 C 70 52 120 52 180 70 S 300 88 360 70 S 480 52 540 70 S 660 88 720 70 S 840 52 900 70 S 1020 88 1080 70 S 1200 52 1260 70 S 1380 88 1440 70 V150 H0Z"/>
+  <path class="w1" d="M0 96 C 96 82 120 82 180 96 S 300 110 360 96 S 480 82 540 96 S 660 110 720 96 S 840 82 900 96 S 1020 110 1080 96 S 1200 82 1260 96 S 1380 110 1440 96 V150 H0Z"/>
+  <path class="w3" d="M0 125 C 90 115 180 115 270 125 S 450 135 540 125 S 720 115 810 125 S 990 135 1080 125 S 1260 115 1440 125"/>
+</svg></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="snail" viewBox="0 0 100 100">
   <g stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -199,11 +215,11 @@ nav.tabs button[aria-selected="true"]{color:var(--on-accent);background:var(--ac
         <p class="sub" id="tripDates">博多・天神・太宰府</p>
       </div>
       <div class="hero-art" aria-hidden="true">
-      <span class="bubble">慢慢玩～</span>
+      <span class="bubble">一起去看海～</span>
       <svg class="doodle" viewBox="0 0 120 96">
         <path class="blob" d="M84 12c11 0 19 8 18 19s-9 18-19 17-18-8-17-18 7-18 18-18z"/>
         <path class="blob2" d="M4 80c10-14 30-20 48-12s30 4 40 10c-8 10-80 12-88 2z"/>
-        <path class="ln" d="M38 84 46 14 54 84M41 62h10M43 40h6M46 14V5M10 89c6-4 12-4 18 0s12 4 18 0 12-4 18 0 12 4 18 0 12-4 18 0"/>
+        <path class="ln" d="M38 84 46 14 54 84M41 62h10M43 40h6M46 14V5M58 54q3-3 6 0q3-3 6 0M68 44q2.5-2.5 5 0q2.5-2.5 5 0M10 89c6-4 12-4 18 0s12 4 18 0 12-4 18 0 12 4 18 0 12-4 18 0"/>
       </svg>
       <svg class="mascot" style="color:var(--ink)"><use href="#snail"/></svg>
       </div>
@@ -218,6 +234,7 @@ nav.tabs button[aria-selected="true"]{color:var(--on-accent);background:var(--ac
 
   <section class="panel" id="panel-plan">
     <h2>每日行程</h2>
+    <svg class="wave-rule" viewBox="0 0 72 8" aria-hidden="true"><path d="M2 4c6-4 10-4 16 0s10 4 16 0 10-4 16 0 10 4 16 0"/></svg>
     <div class="days" id="days" role="group" aria-label="選擇日期"></div>
     <div id="planList"></div>
     <div class="row add-row"><button class="primary" type="button" id="addPlan">＋ 新增行程</button></div>
@@ -225,6 +242,7 @@ nav.tabs button[aria-selected="true"]{color:var(--on-accent);background:var(--ac
 
   <section class="panel" id="panel-todo" hidden>
     <h2>清單 &amp; 口袋名單</h2>
+    <svg class="wave-rule" viewBox="0 0 72 8" aria-hidden="true"><path d="M2 4c6-4 10-4 16 0s10 4 16 0 10-4 16 0 10 4 16 0"/></svg>
     <div class="bar" aria-hidden="true"><i id="todoBar" style="width:0"></i></div>
     <form class="todo-form" id="todoForm">
       <select id="todoGroup" aria-label="分類"></select>
@@ -236,6 +254,7 @@ nav.tabs button[aria-selected="true"]{color:var(--on-accent);background:var(--ac
 
   <section class="panel" id="panel-money" hidden>
     <h2>記帳本</h2>
+    <svg class="wave-rule" viewBox="0 0 72 8" aria-hidden="true"><path d="M2 4c6-4 10-4 16 0s10 4 16 0 10-4 16 0 10 4 16 0"/></svg>
     <div class="stats" id="moneyStats"></div>
     <div class="row add-row"><button class="primary" type="button" id="addExp">＋ 記一筆</button></div>
     <div id="moneyBody"></div>
