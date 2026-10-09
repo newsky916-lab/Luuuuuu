@@ -1,17 +1,17 @@
 /**
- * 福岡行旅帳 — Google 試算表後端
+ * 福岡行旅帳 — 由這份 Google 試算表直接提供網頁和資料
  *
- * 貼到試算表的「擴充功能 → Apps Script」裡：
- *   1. 執行 setup() 一次（會建立「旅帳_」開頭的分頁、放入目前的資料、產生連線密碼）
- *   2. 部署 → 新增部署作業 → 網頁應用程式，執行身分「我」，存取權「所有人」
- *   3. 執行 shareLink()，把執行記錄裡的分享連結複製出來
+ * 在試算表的「擴充功能 → Apps Script」裡放兩個檔案：
+ *   Code.gs     這個檔案
+ *   Index.html  旅帳網頁（repo 根目錄的 index.html）
+ * 然後「部署 → 新增部署作業 → 網頁應用程式」，執行身分「我」，存取權「所有人」。
+ * 部署後拿到的網址就是旅帳，傳給旅伴就能一起編輯。
  *
+ * 第一次有人打開網頁時，會自動建立「旅帳_」開頭的分頁並放入目前的資料。
  * 只會讀寫「旅帳_」開頭的分頁，原本的 Money、list、Note 分頁不會動到。
  *
  * @OnlyCurrentDoc  只要求存取這一份試算表的權限
  */
-
-const PAGE_URL = 'https://newsky916-lab.github.io/Luuuuuu/';
 
 const TABS = {
   plans:    { name: '旅帳_行程', cols: ['id', 'day', 'time', 'title', 'place', 'note', 'sample', 'created'] },
@@ -22,12 +22,43 @@ const SETTINGS_TAB = '旅帳_設定';
 const NUM_FIELDS = ['day', 'amount', 'created', 'days', 'rate'];
 const BOOL_FIELDS = ['done', 'sample'];
 
-// ---------- one-time setup ----------
-function setup() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const props = PropertiesService.getScriptProperties();
-  if (!props.getProperty('KEY')) props.setProperty('KEY', Utilities.getUuid().replace(/-/g, ''));
+// ---------- web app ----------
+function doGet() {
+  ensureTabs_();
+  return HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('李氏夫妻福岡行')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
+}
 
+// Called from the page with google.script.run.api(body). No body = just read.
+function api(body) {
+  ensureTabs_();
+  if (body) {
+    const lock = LockService.getScriptLock();
+    lock.waitLock(20000);
+    try {
+      if (body.op === 'upsert' && TABS[body.coll] && body.item && body.item.id) upsert_(body.coll, body.item);
+      else if (body.op === 'delete' && TABS[body.coll] && body.id) remove_(body.coll, String(body.id));
+      else if (body.op === 'settings' && body.settings) writeSettings_(body.settings);
+      else throw new Error('bad_request');
+      SpreadsheetApp.flush();
+    } finally {
+      lock.releaseLock();
+    }
+  }
+  const out = readAll_();
+  out.url = ScriptApp.getService().getUrl();
+  return out;
+}
+
+// Optional: run once from the editor to create the tabs before anyone opens the page.
+function setup() {
+  ensureTabs_();
+  Logger.log('設定完成。下一步：部署 → 新增部署作業 → 網頁應用程式。');
+}
+
+function ensureTabs_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
   let fresh = false;
   for (const coll of Object.keys(TABS)) {
     const t = TABS[coll];
@@ -35,17 +66,6 @@ function setup() {
   }
   if (!ss.getSheetByName(SETTINGS_TAB)) { makeSheet_(ss, SETTINGS_TAB, ['key', 'value']); fresh = true; }
   if (fresh) seed_();
-
-  Logger.log('設定完成。連線密碼：' + props.getProperty('KEY'));
-  Logger.log('下一步：部署成網頁應用程式，然後執行 shareLink()。');
-}
-
-function shareLink() {
-  const url = ScriptApp.getService().getUrl();
-  if (!url) { Logger.log('還沒有部署。請先「部署 → 新增部署作業 → 網頁應用程式」。'); return; }
-  const key = PropertiesService.getScriptProperties().getProperty('KEY');
-  Logger.log('分享連結（傳給李先生，用手機打開就能一起編輯）：');
-  Logger.log(PAGE_URL + '#api=' + encodeURIComponent(url) + '&k=' + key);
 }
 
 function makeSheet_(ss, name, cols) {
@@ -74,40 +94,6 @@ function seed_() {
   upsert_('expenses', { id: 'x-flight', day: 0, cat: '機票', note: '機票', amount: 30614, currency: 'TWD', payer: '李先生', to: '', sample: false, created: 1 });
   upsert_('expenses', { id: 'x-hotel', day: 0, cat: '住宿', note: '住宿', amount: 11868, currency: 'TWD', payer: '李太太', to: '', sample: false, created: 2 });
   upsert_('expenses', { id: 'x-repay', day: 0, cat: '轉帳', note: '李太太已匯款給李先生（機票一半）', amount: 15307, currency: 'TWD', payer: '李太太', to: '李先生', sample: false, created: 3 });
-}
-
-// ---------- web app ----------
-function doGet(e) {
-  if (!authorized_(e.parameter.k)) return json_({ error: 'unauthorized' });
-  return json_(readAll_());
-}
-
-function doPost(e) {
-  let body;
-  try { body = JSON.parse(e.postData.contents); } catch (err) { return json_({ error: 'bad_request' }); }
-  if (!authorized_(body.k)) return json_({ error: 'unauthorized' });
-
-  const lock = LockService.getScriptLock();
-  lock.waitLock(20000);
-  try {
-    if (body.op === 'upsert' && TABS[body.coll] && body.item && body.item.id) upsert_(body.coll, body.item);
-    else if (body.op === 'delete' && TABS[body.coll] && body.id) remove_(body.coll, String(body.id));
-    else if (body.op === 'settings' && body.settings) writeSettings_(body.settings);
-    else return json_({ error: 'bad_request' });
-    SpreadsheetApp.flush();
-  } finally {
-    lock.releaseLock();
-  }
-  return json_(readAll_());
-}
-
-function authorized_(k) {
-  const key = PropertiesService.getScriptProperties().getProperty('KEY');
-  return !!key && k === key;
-}
-
-function json_(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
 // ---------- storage ----------
